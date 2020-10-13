@@ -1,2 +1,0 @@
-from dummy_tracking_gym.envs.dummy_tracking_env import DummyTrackingEnv
-from dummy_tracking_gym.envs.dummy_tracking_two_player_env import DummyTrackingTwoPlayerEnv
