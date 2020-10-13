@@ -55,6 +55,7 @@ class DummyTrackingEnv(gym.Env):
         self.observation_space = spaces.Box(
             low=0, high=255, shape=(STATE_H, STATE_W, 3), dtype=np.uint8
         )
+        self.observation_space = spaces.Box(0, PLAYFIELD, shape=(4, 1), dtype=np.float32)
 
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
@@ -68,24 +69,26 @@ class DummyTrackingEnv(gym.Env):
         self.blue_square_position = apply_action(self.blue_square_position, action[:2])
         self.red_square_position = apply_action(self.red_square_position, action[2:])
         self.time_steps += 1
-        r = distance(self.blue_square_position, self.red_square_position)
-        if r < FINAL_DISTANCE:
+        dis = distance(self.blue_square_position, self.red_square_position)
+        if dis < FINAL_DISTANCE:
             d = 1
         elif self.time_steps > MAX_DURATION != -1:
             d = 1
         else:
             d = 0
-        return (self.blue_square_position, self.red_square_position), r, d, {}
+        return np.asarray([*self.blue_square_position, *self.red_square_position]), -dis, d, {}
 
     def reset(self):
         self.time_steps = 0
         center = PLAYFIELD//2
         self.red_square_position = (center - SQUARE_SIZE // 2, center + SQUARE_SIZE // 2)
-        self.blue_square_position = self.red_square_position[:]
-        while distance(self.red_square_position, self.blue_square_position) < MIN_START_DISTANCE:
-            self.blue_square_position = (np.random.randint(0 + SQUARE_SIZE // 2, PLAYFIELD - SQUARE_SIZE // 2),
-                                         np.random.randint(0 + SQUARE_SIZE // 2, PLAYFIELD - SQUARE_SIZE // 2))
-        return (self.blue_square_position, self.red_square_position), (0, 0), 0, {}
+        #self.blue_square_position = self.red_square_position[:]
+        #while distance(self.red_square_position, self.blue_square_position) < MIN_START_DISTANCE:
+        #    self.blue_square_position = (np.random.randint(0 + SQUARE_SIZE // 2, PLAYFIELD - SQUARE_SIZE // 2),
+        #                                 np.random.randint(0 + SQUARE_SIZE // 2, PLAYFIELD - SQUARE_SIZE // 2))
+        self.blue_square_position = (SQUARE_SIZE//2, SQUARE_SIZE//2)
+
+        return np.asarray([*self.blue_square_position, *self.red_square_position])
 
     def render_playfield(self):
         colors = [0.4, 0.8, 0.4, 1.0] * 4
@@ -246,12 +249,12 @@ if __name__ == "__main__":
 
     isopen = True
     while isopen:
-        env.reset()
+        state = env.reset()
         total_reward = 0.0
         restart = False
         while True:
             state, reward, done, info = env.step(a)
-            print(f'state: blue: {state[0]}, red: {state[1]} \t reward: {reward} \t done: {done}')
+            print(f'state: blue: {state[:2]}, red: {state[2:]} \t reward: {reward} \t done: {done}')
             isopen = env.render()
             if done or restart or isopen == False:
                 break
