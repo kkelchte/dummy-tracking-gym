@@ -52,9 +52,6 @@ class DummyTrackingEnv(gym.Env):
         self.action_space = spaces.Box(
             np.array([-1, -1, -1, -1]), np.array([+1, +1, +1, +1]), dtype=np.float32
         )
-        self.observation_space = spaces.Box(
-            low=0, high=255, shape=(STATE_H, STATE_W, 3), dtype=np.uint8
-        )
         self.observation_space = spaces.Box(0, PLAYFIELD, shape=(4, 1), dtype=np.float32)
 
     def seed(self, seed=None):
@@ -76,7 +73,19 @@ class DummyTrackingEnv(gym.Env):
             d = 1
         else:
             d = 0
-        return np.asarray([*self.blue_square_position, *self.red_square_position]), -dis, d, {}
+        frame = self.get_tiny_frame()
+        return np.asarray([*self.blue_square_position, *self.red_square_position]), -dis, d, {'frame': frame}
+
+    def get_tiny_frame(self):
+        """Create tiny frame 5x smaller to provide back at each step for visualisation"""
+        frame = np.zeros((WINDOW_H//5, WINDOW_W//5)).astype(np.uint8)
+
+        frame[self.blue_square_position[0]//5-SQUARE_SIZE//10:self.blue_square_position[0]//5+SQUARE_SIZE//10,
+              self.blue_square_position[1]//5-SQUARE_SIZE//10:self.blue_square_position[1]//5+SQUARE_SIZE//10] = 100
+        frame[self.red_square_position[0]//5-SQUARE_SIZE//10:self.red_square_position[0]//5+SQUARE_SIZE//10,
+              self.red_square_position[1]//5-SQUARE_SIZE//10:self.red_square_position[1]//5+SQUARE_SIZE//10] = 255
+        # rotate frame to align with pyglet view
+        return np.rot90(frame)
 
     def reset(self):
         self.time_steps = 0
@@ -254,8 +263,13 @@ if __name__ == "__main__":
         restart = False
         while True:
             state, reward, done, info = env.step(a)
-            print(f'state: blue: {state[:2]}, red: {state[2:]} \t reward: {reward} \t done: {done}')
+            print(f'state: blue: {state[:2]}, red: {state[2:]} \t reward: {reward} \t '
+                  f'done: {done} \t info: {info["frame"].shape}')
             isopen = env.render()
             if done or restart or isopen == False:
+                import matplotlib.pyplot as plt
+
+                plt.imshow(info['frame'])
+                plt.show()
                 break
     env.close()
