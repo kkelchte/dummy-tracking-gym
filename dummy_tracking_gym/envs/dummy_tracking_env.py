@@ -267,9 +267,5 @@ if __name__ == "__main__":
                   f'done: {done} \t info: {info["frame"].shape}')
             isopen = env.render()
             if done or restart or isopen == False:
-                import matplotlib.pyplot as plt
-
-                plt.imshow(info['frame'])
-                plt.show()
                 break
     env.close()
