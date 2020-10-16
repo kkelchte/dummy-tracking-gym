@@ -14,10 +14,10 @@ VIDEO_W = 600
 VIDEO_H = 400
 WINDOW_W = 500
 WINDOW_H = 500
-
+HUNT = False
 PLAYFIELD = 500
 SQUARE_SIZE = 100
-SPEED = 3  # number of units moved each step
+SPEED = 5  # number of units moved each step
 MIN_START_DISTANCE = 60  # two squares should be at least this far apart
 FINAL_DISTANCE = 20  # the tracker has caught the target if the distance is less than FINAL_DISTANCE
 TRACK_REWARD = 100  # reward when tracker wins
@@ -206,6 +206,14 @@ class DummyTrackingEnv(gym.Env):
             self.viewer = None
 
 
+def get_slow_hunt(state: np.ndarray) -> np.ndarray:
+    agent_blue = state[:2]
+    agent_red = state[2:]
+    difference = agent_blue - agent_red
+    difference = np.sign(difference)
+    return 0.3 * difference
+
+
 if __name__ == "__main__":
     from pyglet.window import key
 
@@ -262,6 +270,9 @@ if __name__ == "__main__":
         total_reward = 0.0
         restart = False
         while True:
+            if HUNT:
+                a[2:] = get_slow_hunt(state)
+
             state, reward, done, info = env.step(a)
             print(f'state: blue: {state[:2]}, red: {state[2:]} \t reward: {reward} \t '
                   f'done: {done} \t info: {info["frame"].shape}')
