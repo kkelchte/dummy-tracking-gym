@@ -74,7 +74,8 @@ class DummyTrackingEnv(gym.Env):
         else:
             d = 0
         frame = self.get_tiny_frame()
-        return np.asarray([*self.blue_square_position, *self.red_square_position]), dis, d, {'frame': frame}
+        return np.asarray([*self.blue_square_position, *self.red_square_position]), 0 if d == 0 else self.time_steps, \
+               d, {'frame': frame}
 
     def get_tiny_frame(self):
         """Create tiny frame 5x smaller to provide back at each step for visualisation"""
