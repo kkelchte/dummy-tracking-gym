@@ -90,12 +90,12 @@ class DummyTrackingEnv(gym.Env):
     def reset(self):
         self.time_steps = 0
         center = PLAYFIELD//2
-        self.red_square_position = (center - SQUARE_SIZE // 2, center + SQUARE_SIZE // 2)
+        self.blue_square_position = (center - SQUARE_SIZE // 2, center + SQUARE_SIZE // 2)
         #self.blue_square_position = self.red_square_position[:]
         #while distance(self.red_square_position, self.blue_square_position) < MIN_START_DISTANCE:
         #    self.blue_square_position = (np.random.randint(0 + SQUARE_SIZE // 2, PLAYFIELD - SQUARE_SIZE // 2),
         #                                 np.random.randint(0 + SQUARE_SIZE // 2, PLAYFIELD - SQUARE_SIZE // 2))
-        self.blue_square_position = (SQUARE_SIZE//2, SQUARE_SIZE//2)
+        self.red_square_position = (SQUARE_SIZE//2, SQUARE_SIZE//2)
 
         return np.asarray([*self.blue_square_position, *self.red_square_position])
 
