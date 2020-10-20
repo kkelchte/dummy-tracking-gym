@@ -79,7 +79,6 @@ class DummyTrackingEnv(gym.Env):
             r = -10
         else:
             d = 0
-        print(f'r: {r}')
         frame = self.get_tiny_frame()
         return np.asarray([*self.square_zero_position, *self.square_one_position]) // PLAYFIELD, r, \
                d, {'frame': frame}
