@@ -4,6 +4,8 @@ from gym import error, spaces, utils
 from gym.utils import seeding, EzPickle
 
 import pyglet
+from skimage import draw
+import matplotlib.pyplot as plt
 
 pyglet.options["debug_gl"] = False
 from pyglet import gl
@@ -34,19 +36,20 @@ class DummyTrackingEnv(gym.Env):
         "render.modes": ["human", "rgb_array", "state_pixels"],
     }
 
-    def __init__(self):
+    def __init__(self, random_location: bool = True):
         EzPickle.__init__(self)
+        self.random_location = random_location
         self.time_steps = 0
         self.viewer = None
         self.reward = 0.0
         self.prev_reward = 0.0
         self.verbose = True
         center = PLAYFIELD//2
-        self.red_square_position = (center - SQUARE_SIZE // 2, center + SQUARE_SIZE // 2)
+        self.square_zero_position = (center - SQUARE_SIZE // 2, center + SQUARE_SIZE // 2)
 
-        self.blue_square_position = self.red_square_position[:]
-        while distance(self.red_square_position, self.blue_square_position) < MIN_START_DISTANCE:
-            self.blue_square_position = (np.random.randint(0 + SQUARE_SIZE//2, PLAYFIELD - SQUARE_SIZE//2),
+        self.square_one_position = self.square_zero_position[:]
+        while distance(self.square_zero_position, self.square_one_position) < MIN_START_DISTANCE:
+            self.square_one_position = (np.random.randint(0 + SQUARE_SIZE//2, PLAYFIELD - SQUARE_SIZE//2),
                                          np.random.randint(0 + SQUARE_SIZE//2, PLAYFIELD - SQUARE_SIZE//2))
 
         self.action_space = spaces.Box(
@@ -63,42 +66,71 @@ class DummyTrackingEnv(gym.Env):
             return (np.clip(p[0] + SPEED * a[0], 0 + SQUARE_SIZE//2, PLAYFIELD - SQUARE_SIZE//2).astype(np.int),
                     np.clip(p[1] + SPEED * a[1], 0 + SQUARE_SIZE//2, PLAYFIELD - SQUARE_SIZE//2).astype(np.int))
 
-        self.blue_square_position = apply_action(self.blue_square_position, action[:2])
-        self.red_square_position = apply_action(self.red_square_position, action[2:])
+        self.square_zero_position = apply_action(self.square_zero_position, action[:2])
+        self.square_one_position = apply_action(self.square_one_position, action[2:])
         self.time_steps += 1
-        dis = distance(self.blue_square_position, self.red_square_position)
+        dis = distance(self.square_one_position, self.square_zero_position)
+        r = 1 - np.sqrt(2) * dis / float(PLAYFIELD - SQUARE_SIZE)
         if dis < FINAL_DISTANCE:
             d = 1
+            r = 10
         elif self.time_steps > MAX_DURATION != -1:
             d = 1
+            r = -10
         else:
             d = 0
+        print(f'r: {r}')
         frame = self.get_tiny_frame()
-        return np.asarray([*self.blue_square_position, *self.red_square_position]), 0 if d == 0 else self.time_steps, \
+        return np.asarray([*self.square_zero_position, *self.square_one_position]) // PLAYFIELD, r, \
                d, {'frame': frame}
 
     def get_tiny_frame(self):
         """Create tiny frame 5x smaller to provide back at each step for visualisation"""
-        frame = np.zeros((WINDOW_H//5, WINDOW_W//5)).astype(np.uint8)
+        scale = 5
+        frame = np.zeros((WINDOW_H//scale, WINDOW_W//scale)).astype(np.uint8)
 
-        frame[self.blue_square_position[0]//5-SQUARE_SIZE//10:self.blue_square_position[0]//5+SQUARE_SIZE//10,
-              self.blue_square_position[1]//5-SQUARE_SIZE//10:self.blue_square_position[1]//5+SQUARE_SIZE//10] = 100
-        frame[self.red_square_position[0]//5-SQUARE_SIZE//10:self.red_square_position[0]//5+SQUARE_SIZE//10,
-              self.red_square_position[1]//5-SQUARE_SIZE//10:self.red_square_position[1]//5+SQUARE_SIZE//10] = 255
+        frame[
+            self.square_zero_position[0] // scale - SQUARE_SIZE // (2 * scale):
+            self.square_zero_position[0] // scale + SQUARE_SIZE // (2 * scale),
+            self.square_zero_position[1] // scale - SQUARE_SIZE // (2 * scale):
+            self.square_zero_position[1] // scale + SQUARE_SIZE // (2 * scale)
+        ] = 255
+        rr, cc = draw.circle_perimeter(self.square_zero_position[0] // scale,
+                                       self.square_zero_position[1] // scale,
+                                       radius=SQUARE_SIZE // (4 * scale),
+                                       shape=frame.shape)
+        frame[rr, cc] = 0
+        frame[
+            self.square_one_position[0] // scale - SQUARE_SIZE // (2 * scale):
+            self.square_one_position[0] // scale + SQUARE_SIZE // (2 * scale),
+            self.square_one_position[1] // scale - SQUARE_SIZE // (2 * scale):
+            self.square_one_position[1] // scale + SQUARE_SIZE // (2 * scale)
+        ] = 255
+        rr, cc = draw.line(self.square_one_position[0] // scale,
+                           self.square_one_position[1] // scale - SQUARE_SIZE // (4 * scale),
+                           self.square_one_position[0] // scale,
+                           self.square_one_position[1] // scale + SQUARE_SIZE // (4 * scale))
+        frame[rr, cc] = 0
+
         # rotate frame to align with pyglet view
         return np.rot90(frame)
 
     def reset(self):
         self.time_steps = 0
         center = PLAYFIELD//2
-        self.blue_square_position = (center - SQUARE_SIZE // 2, center + SQUARE_SIZE // 2)
-        #self.blue_square_position = self.red_square_position[:]
-        #while distance(self.red_square_position, self.blue_square_position) < MIN_START_DISTANCE:
-        #    self.blue_square_position = (np.random.randint(0 + SQUARE_SIZE // 2, PLAYFIELD - SQUARE_SIZE // 2),
-        #                                 np.random.randint(0 + SQUARE_SIZE // 2, PLAYFIELD - SQUARE_SIZE // 2))
-        self.red_square_position = (SQUARE_SIZE//2, SQUARE_SIZE//2)
+        if self.random_location:
+            self.square_one_position = self.square_zero_position[:]
+            while distance(self.square_zero_position, self.square_one_position) < MIN_START_DISTANCE:
+                self.square_one_position = (np.random.randint(0 + SQUARE_SIZE // 2, PLAYFIELD - SQUARE_SIZE // 2),
+                                             np.random.randint(0 + SQUARE_SIZE // 2, PLAYFIELD - SQUARE_SIZE // 2))
+        else:
+            self.square_zero_position = (center + SQUARE_SIZE,
+                                         center + SQUARE_SIZE)
 
-        return np.asarray([*self.blue_square_position, *self.red_square_position])
+            self.square_one_position = (center - SQUARE_SIZE,
+                                        center - SQUARE_SIZE)
+
+        return np.asarray([*self.square_zero_position, *self.square_one_position])
 
     def render_playfield(self):
         colors = [0.4, 0.8, 0.4, 1.0] * 4
@@ -139,8 +171,8 @@ class DummyTrackingEnv(gym.Env):
                 len(polygons) // 3, ("v3f", polygons), ("c4f", colors)  # gl.GL_QUADS,
             )
             vl.draw(gl.GL_QUADS)
-        draw_square(self.blue_square_position, [0.1, 0.1, 0.6, 1.0])
-        draw_square(self.red_square_position, [0.6, 0.1, 0.1, 1.0])
+        draw_square(self.square_zero_position, [0.6, 0.1, 0.1, 1.0])
+        draw_square(self.square_one_position, [0.1, 0.1, 0.6, 1.0])
 
     def render(self, mode='human'):
         assert mode in ["human", "state_pixels", "rgb_array"]
@@ -275,8 +307,11 @@ if __name__ == "__main__":
                 a[2:] = get_slow_hunt(state)
 
             state, reward, done, info = env.step(a)
-            print(f'state: blue: {state[:2]}, red: {state[2:]} \t reward: {reward} \t '
+            print(f'state: zero: {state[:2]}, one: {state[2:]} \t reward: {reward} \t '
                   f'done: {done} \t info: {info["frame"].shape}')
+
+            #plt.imshow(info['frame'])
+            # plt.show()
             isopen = env.render()
             if done or restart or isopen == False:
                 break
