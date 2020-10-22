@@ -21,8 +21,7 @@ PLAYFIELD = 500
 SQUARE_SIZE = 100
 SPEED = 5  # number of units moved each step
 MIN_START_DISTANCE = 60  # two squares should be at least this far apart
-FINAL_DISTANCE = 20  # the tracker has caught the target if the distance is less than FINAL_DISTANCE
-TRACK_REWARD = 100  # reward when tracker wins
+FINAL_DISTANCE = 100  # the tracker has caught the target if the distance is less than FINAL_DISTANCE
 MAX_DURATION = 1000  # max number of time steps, if max is reached fleeing agent wins
 
 
@@ -80,7 +79,7 @@ class DummyTrackingEnv(gym.Env):
         else:
             d = 0
         frame = self.get_tiny_frame()
-        return np.asarray([*self.square_zero_position, *self.square_one_position]) // PLAYFIELD, r, \
+        return np.asarray([*self.square_zero_position, *self.square_one_position], dtype=np.float) / PLAYFIELD, r, \
                d, {'frame': frame}
 
     def get_tiny_frame(self):
@@ -118,10 +117,14 @@ class DummyTrackingEnv(gym.Env):
         self.time_steps = 0
         center = PLAYFIELD//2
         if self.random_location:
-            self.square_one_position = self.square_zero_position[:]
+            def sample_random_location():
+                return (np.random.randint(0 + SQUARE_SIZE // 2, PLAYFIELD - SQUARE_SIZE // 2),
+                        np.random.randint(0 + SQUARE_SIZE // 2, PLAYFIELD - SQUARE_SIZE // 2))
+            self.square_zero_position = sample_random_location()
+            self.square_one_position = sample_random_location()
             while distance(self.square_zero_position, self.square_one_position) < MIN_START_DISTANCE:
-                self.square_one_position = (np.random.randint(0 + SQUARE_SIZE // 2, PLAYFIELD - SQUARE_SIZE // 2),
-                                             np.random.randint(0 + SQUARE_SIZE // 2, PLAYFIELD - SQUARE_SIZE // 2))
+                self.square_zero_position = sample_random_location()
+                self.square_one_position = sample_random_location()
         else:
             self.square_zero_position = (center + SQUARE_SIZE,
                                          center + SQUARE_SIZE)
