@@ -158,7 +158,7 @@ class DummyTrackingEnv(gym.Env):
             self.square_one_position = (center - SQUARE_SIZE,
                                         center - SQUARE_SIZE)
 
-        return np.asarray([*self.square_zero_position, *self.square_one_position])
+        return np.asarray([*self.square_zero_position, *self.square_one_position], dtype=np.float) / PLAYFIELD
 
     def render_playfield(self):
         colors = [0.4, 0.8, 0.4, 1.0] * 4
