@@ -22,7 +22,7 @@ SQUARE_SIZE = 100
 SPEED = 5  # number of units moved each step
 MIN_START_DISTANCE = 60  # two squares should be at least this far apart
 FINAL_DISTANCE = 100  # the tracker has caught the target if the distance is less than FINAL_DISTANCE
-MAX_DURATION = 1000  # max number of time steps, if max is reached fleeing agent wins
+MAX_DURATION = 300  # max number of time steps, if max is reached fleeing agent wins
 
 
 def distance(position_a, position_b):
@@ -72,10 +72,10 @@ class DummyTrackingEnv(gym.Env):
         r = 1 - np.sqrt(2) * dis / float(PLAYFIELD - SQUARE_SIZE)
         if dis < FINAL_DISTANCE:
             d = 1
-            r = 10
+            r = 100
         elif self.time_steps > MAX_DURATION != -1:
             d = 1
-            r = -10
+            r = -100
         else:
             d = 0
         frame = self.get_tiny_frame()
