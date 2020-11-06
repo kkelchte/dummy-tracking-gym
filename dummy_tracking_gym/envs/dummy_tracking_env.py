@@ -69,7 +69,8 @@ class DummyTrackingEnv(gym.Env):
         self.square_one_position = apply_action(self.square_one_position, action[2:])
         self.time_steps += 1
         dis = distance(self.square_one_position, self.square_zero_position)
-        r = 1 - np.sqrt(2) * dis / float(PLAYFIELD - SQUARE_SIZE)
+        #r = 1 - np.sqrt(2) * dis / float(PLAYFIELD - SQUARE_SIZE)
+        r = 0
         if dis < FINAL_DISTANCE:
             d = 1
             r = 100
