@@ -22,14 +22,14 @@ PLAYFIELD = 500
 SQUARE_SIZE = 100
 SPEED = 5  # number of units moved each step
 MIN_START_DISTANCE = 60  # two squares should be at least this far apart
-FINAL_DISTANCE = 20  # the tracker has caught the target if the distance is less than FINAL_DISTANCE
+FINAL_DISTANCE = 100  # the tracker has caught the target if the distance is less than FINAL_DISTANCE
 FINAL_IOU = 0.9  # the tracker has caught the target if the IoU is more than FINAL_IOU
-MAX_DURATION = 1000  # max number of time steps, if max is reached fleeing agent wins
+MAX_DURATION = 300  # max number of time steps, if max is reached fleeing agent wins
 
 
 def distance(position_a, position_b):
-    return np.sqrt((position_a[0] - position_b[0]) ** 2 +
-                   (position_a[1] - position_b[1]) ** 2)
+    return np.sqrt((position_a[0] - position_b[0])**2 +
+                   (position_a[1] - position_b[1])**2)
 
 
 def intersection_over_union(position_a, position_b):
@@ -65,13 +65,13 @@ class DummyTrackingEnv(gym.Env):
         self.reward = 0.0
         self.prev_reward = 0.0
         self.verbose = True
-        center = PLAYFIELD // 2
+        center = PLAYFIELD//2
         self.square_zero_position = (center - SQUARE_SIZE // 2, center + SQUARE_SIZE // 2)
 
         self.square_one_position = self.square_zero_position[:]
         while distance(self.square_zero_position, self.square_one_position) < MIN_START_DISTANCE:
-            self.square_one_position = (np.random.randint(0 + SQUARE_SIZE // 2, PLAYFIELD - SQUARE_SIZE // 2),
-                                        np.random.randint(0 + SQUARE_SIZE // 2, PLAYFIELD - SQUARE_SIZE // 2))
+            self.square_one_position = (np.random.randint(0 + SQUARE_SIZE//2, PLAYFIELD - SQUARE_SIZE//2),
+                                         np.random.randint(0 + SQUARE_SIZE//2, PLAYFIELD - SQUARE_SIZE//2))
 
         #self.action_space = spaces.Box(np.array([-1, -1, -1, -1]), np.array([+1, +1, +1, +1]), dtype=np.float32)
         self.action_space = spaces.Discrete(5)
@@ -82,10 +82,9 @@ class DummyTrackingEnv(gym.Env):
         return [seed]
 
     def step(self, action):
-
         def apply_action(p, a):
-            return (np.clip(p[0] + SPEED * a[0], 0 + SQUARE_SIZE // 2, PLAYFIELD - SQUARE_SIZE // 2).astype(np.int),
-                    np.clip(p[1] + SPEED * a[1], 0 + SQUARE_SIZE // 2, PLAYFIELD - SQUARE_SIZE // 2).astype(np.int))
+            return (np.clip(p[0] + SPEED * a[0], 0 + SQUARE_SIZE//2, PLAYFIELD - SQUARE_SIZE//2).astype(np.int),
+                    np.clip(p[1] + SPEED * a[1], 0 + SQUARE_SIZE//2, PLAYFIELD - SQUARE_SIZE//2).astype(np.int))
 
         self.square_zero_position = apply_action(self.square_zero_position, action[:2])
         self.square_one_position = apply_action(self.square_one_position, action[2:])
@@ -97,10 +96,10 @@ class DummyTrackingEnv(gym.Env):
         #if dis < FINAL_DISTANCE:
         if iou > FINAL_IOU:
             d = 1
-            r = 10
+            r = 100
         elif self.time_steps > MAX_DURATION != -1:
             d = 1
-            r = -10
+            r = -100
         else:
             d = 0
         frame = self.get_tiny_frame()
@@ -110,13 +109,13 @@ class DummyTrackingEnv(gym.Env):
     def get_tiny_frame(self):
         """Create tiny frame 5x smaller to provide back at each step for visualisation"""
         scale = 5
-        frame = np.zeros((WINDOW_H // scale, WINDOW_W // scale)).astype(np.uint8)
+        frame = np.zeros((WINDOW_H//scale, WINDOW_W//scale)).astype(np.uint8)
 
         frame[
-        self.square_zero_position[0] // scale - SQUARE_SIZE // (2 * scale):
-        self.square_zero_position[0] // scale + SQUARE_SIZE // (2 * scale),
-        self.square_zero_position[1] // scale - SQUARE_SIZE // (2 * scale):
-        self.square_zero_position[1] // scale + SQUARE_SIZE // (2 * scale)
+            self.square_zero_position[0] // scale - SQUARE_SIZE // (2 * scale):
+            self.square_zero_position[0] // scale + SQUARE_SIZE // (2 * scale),
+            self.square_zero_position[1] // scale - SQUARE_SIZE // (2 * scale):
+            self.square_zero_position[1] // scale + SQUARE_SIZE // (2 * scale)
         ] = 255
         rr, cc = draw.circle_perimeter(self.square_zero_position[0] // scale,
                                        self.square_zero_position[1] // scale,
@@ -124,10 +123,10 @@ class DummyTrackingEnv(gym.Env):
                                        shape=frame.shape)
         frame[rr, cc] = 0
         frame[
-        self.square_one_position[0] // scale - SQUARE_SIZE // (2 * scale):
-        self.square_one_position[0] // scale + SQUARE_SIZE // (2 * scale),
-        self.square_one_position[1] // scale - SQUARE_SIZE // (2 * scale):
-        self.square_one_position[1] // scale + SQUARE_SIZE // (2 * scale)
+            self.square_one_position[0] // scale - SQUARE_SIZE // (2 * scale):
+            self.square_one_position[0] // scale + SQUARE_SIZE // (2 * scale),
+            self.square_one_position[1] // scale - SQUARE_SIZE // (2 * scale):
+            self.square_one_position[1] // scale + SQUARE_SIZE // (2 * scale)
         ] = 255
         rr, cc = draw.line(self.square_one_position[0] // scale,
                            self.square_one_position[1] // scale - SQUARE_SIZE // (4 * scale),
@@ -140,12 +139,11 @@ class DummyTrackingEnv(gym.Env):
 
     def reset(self):
         self.time_steps = 0
-        center = PLAYFIELD // 2
+        center = PLAYFIELD//2
         if self.random_location:
             def sample_random_location():
                 return (np.random.randint(0 + SQUARE_SIZE // 2, PLAYFIELD - SQUARE_SIZE // 2),
                         np.random.randint(0 + SQUARE_SIZE // 2, PLAYFIELD - SQUARE_SIZE // 2))
-
             self.square_zero_position = sample_random_location()
             self.square_one_position = sample_random_location()
             while distance(self.square_zero_position, self.square_one_position) < MIN_START_DISTANCE:
@@ -183,23 +181,22 @@ class DummyTrackingEnv(gym.Env):
         def draw_square(position, color):
             x, y = position
             colors = color * 4
-            polygons = [x + SQUARE_SIZE // 2,
-                        y + SQUARE_SIZE // 2,
+            polygons = [x + SQUARE_SIZE//2,
+                        y + SQUARE_SIZE//2,
                         0,
-                        x + SQUARE_SIZE // 2,
-                        y - SQUARE_SIZE // 2,
+                        x + SQUARE_SIZE//2,
+                        y - SQUARE_SIZE//2,
                         0,
-                        x - SQUARE_SIZE / 2,
-                        y - SQUARE_SIZE / 2,
+                        x - SQUARE_SIZE/2,
+                        y - SQUARE_SIZE/2,
                         0,
-                        x - SQUARE_SIZE / 2,
-                        y + SQUARE_SIZE / 2,
+                        x - SQUARE_SIZE/2,
+                        y + SQUARE_SIZE/2,
                         0]
             vl = pyglet.graphics.vertex_list(
                 len(polygons) // 3, ("v3f", polygons), ("c4f", colors)  # gl.GL_QUADS,
             )
             vl.draw(gl.GL_QUADS)
-
         draw_square(self.square_zero_position, [0.6, 0.1, 0.1, 1.0])
         draw_square(self.square_one_position, [0.1, 0.1, 0.6, 1.0])
 
@@ -282,7 +279,6 @@ if __name__ == "__main__":
     MAX_DURATION = -1
     a = np.array([0.0, 0.0, 0.0, 0.0])
 
-
     def key_press(k, mod):
         global restart
         if k == 0xFF0D:
@@ -304,7 +300,6 @@ if __name__ == "__main__":
         if k == key.D:
             a[3] = -1.0
 
-
     def key_release(k, mod):
         if k == key.LEFT:
             a[0] = 0
@@ -322,7 +317,6 @@ if __name__ == "__main__":
             a[3] = 0
         if k == key.D:
             a[3] = 0
-
 
     env = DummyTrackingEnv()
     env.render()
@@ -342,7 +336,7 @@ if __name__ == "__main__":
             print(f'state: zero: {state[:2]}, one: {state[2:]} \t reward: {reward} \t '
                   f'done: {done} \t info: {info["frame"].shape}')
 
-            # plt.imshow(info['frame'])
+            #plt.imshow(info['frame'])
             # plt.show()
             isopen = env.render()
             if done or restart or isopen == False:
