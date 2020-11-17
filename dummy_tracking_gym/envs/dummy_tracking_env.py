@@ -73,8 +73,7 @@ class DummyTrackingEnv(gym.Env):
             self.square_one_position = (np.random.randint(0 + SQUARE_SIZE//2, PLAYFIELD - SQUARE_SIZE//2),
                                          np.random.randint(0 + SQUARE_SIZE//2, PLAYFIELD - SQUARE_SIZE//2))
 
-        #self.action_space = spaces.Box(np.array([-1, -1, -1, -1]), np.array([+1, +1, +1, +1]), dtype=np.float32)
-        self.action_space = spaces.Discrete(5)
+        self.action_space = spaces.Box(np.array([-1, -1, -1, -1]), np.array([+1, +1, +1, +1]), dtype=np.float32)
         self.observation_space = spaces.Box(0, PLAYFIELD, shape=(4, 1), dtype=np.float32)
 
     def seed(self, seed=None):
