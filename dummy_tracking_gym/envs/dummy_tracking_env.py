@@ -18,6 +18,7 @@ VIDEO_H = 400
 WINDOW_W = 500
 WINDOW_H = 500
 HUNT = False
+RUN = False
 PLAYFIELD = 500
 SQUARE_SIZE = 100
 SPEED = 5  # number of units moved each step
@@ -90,13 +91,12 @@ class DummyTrackingEnv(gym.Env):
         self.time_steps += 1
         iou = intersection_over_union(self.square_one_position, self.square_zero_position)
         dis = distance(self.square_one_position, self.square_zero_position)
-        #r = 1 - np.sqrt(2) * dis / float(PLAYFIELD - SQUARE_SIZE)
         r = iou + 1/dis
-        #if dis < FINAL_DISTANCE:
         if iou > FINAL_IOU:
             d = 1
             r = 100
         elif self.time_steps > MAX_DURATION != -1:
+            print("win")
             d = 1
             r = -100
         else:
@@ -272,10 +272,21 @@ def get_slow_hunt(state: np.ndarray) -> np.ndarray:
     return 0.3 * difference
 
 
+def get_slow_run(state: np.ndarray) -> np.ndarray:
+    agent_blue = state[:2]
+    agent_red = state[2:]
+    difference = (agent_blue - agent_red)
+    for diff in difference:
+        if diff == 0:
+            difference += (np.random.rand(2) - 0.5)/10
+    difference = np.sign(difference)
+    return 0.4 * difference
+
+
 if __name__ == "__main__":
     from pyglet.window import key
 
-    MAX_DURATION = -1
+    MAX_DURATION = 300
     a = np.array([0.0, 0.0, 0.0, 0.0])
 
     def key_press(k, mod):
@@ -330,6 +341,8 @@ if __name__ == "__main__":
         while True:
             if HUNT:
                 a[2:] = get_slow_hunt(state)
+            if RUN:
+                a[:2] = get_slow_run(state)
 
             state, reward, done, info = env.step(a)
             print(f'state: zero: {state[:2]}, one: {state[2:]} \t reward: {reward} \t '
