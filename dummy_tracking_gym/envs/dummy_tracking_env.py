@@ -3,6 +3,7 @@ import gym
 from gym import error, spaces, utils
 from gym.utils import seeding, EzPickle
 from collections import namedtuple
+from math import sqrt
 
 import pyglet
 from skimage import draw
@@ -17,8 +18,8 @@ VIDEO_W = 600
 VIDEO_H = 400
 WINDOW_W = 500
 WINDOW_H = 500
-HUNT = False
-RUN = False
+HUNT = True
+RUN = True
 PLAYFIELD = 500
 SQUARE_SIZE = 100
 SPEED = 5  # number of units moved each step
@@ -26,6 +27,7 @@ MIN_START_DISTANCE = 60  # two squares should be at least this far apart
 FINAL_DISTANCE = 100  # the tracker has caught the target if the distance is less than FINAL_DISTANCE
 FINAL_IOU = 0.9  # the tracker has caught the target if the IoU is more than FINAL_IOU
 MAX_DURATION = 300  # max number of time steps, if max is reached fleeing agent wins
+MAX_DIST = sqrt((WINDOW_H-SQUARE_SIZE)**2+(WINDOW_W-SQUARE_SIZE)**2)
 
 
 def distance(position_a, position_b):
@@ -48,7 +50,7 @@ def intersection_over_union(position_a, position_b):
     else:
         intersection = 0
 
-    union = SQUARE_SIZE**2 - intersection
+    union = 2*SQUARE_SIZE**2 - intersection
 
     return intersection / union
 
@@ -90,15 +92,10 @@ class DummyTrackingEnv(gym.Env):
         self.square_one_position = apply_action(self.square_one_position, action[2:])
         self.time_steps += 1
         iou = intersection_over_union(self.square_one_position, self.square_zero_position)
-        dis = distance(self.square_one_position, self.square_zero_position)
-        r = iou + 1/dis
-        if iou > FINAL_IOU:
+        dist = distance(self.square_one_position, self.square_zero_position)
+        r = 9*iou + (MAX_DIST-dist)/MAX_DIST
+        if self.time_steps > MAX_DURATION != -1:
             d = 1
-            r = 100
-        elif self.time_steps > MAX_DURATION != -1:
-            print("win")
-            d = 1
-            r = -100
         else:
             d = 0
         frame = self.get_tiny_frame()
@@ -269,7 +266,7 @@ def get_slow_hunt(state: np.ndarray) -> np.ndarray:
     agent_red = state[2:]
     difference = agent_blue - agent_red
     difference = np.sign(difference)
-    return 0.3 * difference
+    return 0.5 * difference
 
 
 def get_slow_run(state: np.ndarray) -> np.ndarray:
@@ -280,7 +277,7 @@ def get_slow_run(state: np.ndarray) -> np.ndarray:
         if diff == 0:
             difference += (np.random.rand(2) - 0.5)/10
     difference = np.sign(difference)
-    return 0.4 * difference
+    return 0.6 * difference
 
 
 if __name__ == "__main__":
@@ -345,7 +342,8 @@ if __name__ == "__main__":
                 a[:2] = get_slow_run(state)
 
             state, reward, done, info = env.step(a)
-            print(f'state: zero: {state[:2]}, one: {state[2:]} \t reward: {reward} \t '
+            total_reward += reward
+            print(f'state: zero: {state[:2]}, one: {state[2:]} \t reward: {total_reward} \t '
                   f'done: {done} \t info: {info["frame"].shape}')
 
             #plt.imshow(info['frame'])
