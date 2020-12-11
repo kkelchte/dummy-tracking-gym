@@ -3,9 +3,11 @@ import gym
 from gym import error, spaces, utils
 from gym.utils import seeding, EzPickle
 from collections import namedtuple
+from src.ai.architectures.tracking_actor_critic import Net as BaseNet
+from src.ai.base_net import ArchitectureConfig
 from math import sqrt
-
 import pyglet
+import torch
 from skimage import draw
 import matplotlib.pyplot as plt
 
@@ -18,8 +20,9 @@ VIDEO_W = 600
 VIDEO_H = 400
 WINDOW_W = 500
 WINDOW_H = 500
-HUNT = True
+HUNT = False
 RUN = True
+NET_TRACKING = True
 PLAYFIELD = 500
 SQUARE_SIZE = 100
 SPEED = 5  # number of units moved each step
@@ -277,10 +280,19 @@ def get_slow_run(state: np.ndarray) -> np.ndarray:
         if diff == 0:
             difference += (np.random.rand(2) - 0.5)/10
     difference = np.sign(difference)
-    return 0.6 * difference
+    return 1.5 * difference
 
 
 if __name__ == "__main__":
+
+    base_config = {"architecture": "", "initialisation_type": 'xavier', "random_seed": 0, "device": 'cpu',
+                   'output_path': "experimental_data/env_test"}
+
+    model = BaseNet(ArchitectureConfig().create(config_dict=base_config))
+
+    checkpoint = torch.load('checkpoint.ckpt')
+    model.load_state_dict(checkpoint['net_ckpt']['model_state'])
+
     from pyglet.window import key
 
     MAX_DURATION = 300
@@ -336,7 +348,10 @@ if __name__ == "__main__":
         total_reward = 0.0
         restart = False
         while True:
-            if HUNT:
+            model_state = np.array(np.squeeze([state[2], state[3], state[0], state[1]]))
+            if NET_TRACKING:
+                a[2:] = model.get_action(model_state).value[:2]
+            elif HUNT:
                 a[2:] = get_slow_hunt(state)
             if RUN:
                 a[:2] = get_slow_run(state)
